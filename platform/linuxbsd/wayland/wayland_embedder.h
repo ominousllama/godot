@@ -74,6 +74,7 @@
 
 #include <poll.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <sys/un.h>
 
 #include <cstdint>
@@ -83,6 +84,13 @@
 
 // TODO: Consider resizing the ancillary buffer dynamically.
 #define EMBED_ANCILLARY_BUF_SIZE 4096
+
+// Upper bound on how long a single recvmsg() call is allowed to block waiting
+// for more of an already-started message. Without this, a peer that stalls
+// mid-message (or an SCM_RIGHTS boundary that never gets the rest of its data)
+// blocks this whole single-threaded proxy indefinitely instead of just erroring
+// out like a short/malformed message normally would.
+#define EMBED_SOCKET_RECV_TIMEOUT_SEC 5
 
 class WaylandEmbedder {
 	enum class ProxyDirection {

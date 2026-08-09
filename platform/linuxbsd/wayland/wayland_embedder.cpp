@@ -3296,6 +3296,11 @@ Error WaylandEmbedder::init(bool debug) {
 	ERR_FAIL_NULL_V(display, ERR_CANT_OPEN);
 	compositor_socket = wl_display_get_fd(display);
 
+	{
+		struct timeval recv_timeout = { EMBED_SOCKET_RECV_TIMEOUT_SEC, 0 };
+		setsockopt(compositor_socket, SOL_SOCKET, SO_RCVTIMEO, &recv_timeout, sizeof recv_timeout);
+	}
+
 	pollfds.push_back({ proxy_socket, POLLIN, 0 });
 	pollfds.push_back({ compositor_socket, POLLIN, 0 });
 
@@ -3341,6 +3346,11 @@ void WaylandEmbedder::handle_fd(int p_fd, int p_revents) {
 		// Client init.
 		int new_fd = accept(proxy_socket, nullptr, nullptr);
 		ERR_FAIL_COND_MSG(new_fd == -1, "Failed to accept client.");
+
+		{
+			struct timeval recv_timeout = { EMBED_SOCKET_RECV_TIMEOUT_SEC, 0 };
+			setsockopt(new_fd, SOL_SOCKET, SO_RCVTIMEO, &recv_timeout, sizeof recv_timeout);
+		}
 
 		struct ucred cred = {};
 		socklen_t cred_size = sizeof cred;
